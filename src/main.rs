@@ -1,14 +1,54 @@
+use std::fmt::Debug;
 use std::io::prelude::*;
+use std::fs;
 use std::fs::File;
-use anyhow::Result;
+use anyhow::{Result};
 use clap::{Arg, Command, ValueEnum, Parser};
-use log::{info, warn};
+use chrono::{DateTime, Local, Utc, NaiveDateTime, TimeDelta};
+use std::time::{SystemTime, UNIX_EPOCH};
 
+/// only allow explicit values and assign an extension type for each
 #[derive(Debug, Clone, ValueEnum)]
 enum ArchiveType {
     Tar,
     TarGunzip,
     Zip,
+}
+
+impl ArchiveType {
+    fn as_str(&self) -> &'static str {
+        match self {
+            ArchiveType::Tar => "tar",
+            ArchiveType::TarGunzip => "tar.gz",
+            ArchiveType::Zip => "zip"
+        }
+    }
+}
+
+/// Self explanatory 
+fn get_file_mtime(file: &str) -> Result<i64> {
+    let _file_metadata: DateTime <Utc> = fs::metadata(file.to_string())?
+        .modified()?
+        .into();
+
+    let now: DateTime<Utc> = Utc::now();
+    let diff: i64 = now
+        .signed_duration_since(_file_metadata)
+        .num_days();
+
+    Ok(diff)
+}
+
+/// Boilerplate for future function that checks mtime diff 
+/// and archives / removes if a threshold is met
+fn archive_file(file: &str, threshhold_days: i64, archive_type: ArchiveType) -> Result<()> {
+    let _mtime_diff = get_file_mtime(file)?;
+    if _mtime_diff > threshhold_days {
+        println!("Archive Type: {}", archive_type.as_str());
+        println!("File Path: {}", file);
+    }
+
+    Ok(())
 }
 
 #[derive(Parser, Debug)]
@@ -41,9 +81,14 @@ struct Cli {
 
 fn main() -> Result<()> {
     let args = Cli::parse();
+    let _test_file = "/tmp/test_logs/test_file_16.log.tar.gz";
+    let _test_diff = get_file_mtime(_test_file)?;
 
-    info!("-- Testing --");
-    println!("Archive Method: {:?}", args.archive_method);
+    println!("Archive Method: {}", args.archive_method.as_str());
     println!("Directory: {:?}", args.directory);
+    println!("Difference in file mtime and current date: {}", _test_diff);
+
+    archive_file(_test_file, 1, ArchiveType::Tar).expect("Failed to archive file");
+
     Ok(())
 }
