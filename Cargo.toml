@@ -1,0 +1,23 @@
+[package]
+name = "logrotate"
+version = "0.1.0"
+edition = "2024"
+
+authors = ["Jack Sims jack.m.sims@protonmail.com"]
+license = "Apache-2.0"
+description = "Cli tool for rotating files within specified directory."
+readme = "README.md"
+homepage = "https://github.com/jackpots28/logrotate"
+repository = "https://github.com/jackpots28/logrotate"
+keywords = ["cli", "logs", "utility"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+anyhow = "1.0.99"
+clap = { version = "4.5.47", features = ["derive"] }
+flate2 = "1.1.2"
+tar = "0.4.44"
+log = "0.4.28"
+
+[[bin]]
+name="logrotate"
