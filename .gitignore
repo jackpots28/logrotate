@@ -1,0 +1,9 @@
+# Generic Files
+design_doc.md
+
+# Rust ENV Specific Files
+/target
+Cargo.lock
+
+# Jetbrains Specific Files
+/.idea
