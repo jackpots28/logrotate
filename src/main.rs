@@ -1,11 +1,10 @@
+#![allow(unused)]
 use std::fmt::Debug;
-use std::io::prelude::*;
 use std::fs;
-use std::fs::File;
+use std::path::{PathBuf};
 use anyhow::{Result};
-use clap::{Arg, Command, ValueEnum, Parser};
-use chrono::{DateTime, Local, Utc, NaiveDateTime, TimeDelta};
-use std::time::{SystemTime, UNIX_EPOCH};
+use clap::{ValueEnum, Parser};
+use chrono::{DateTime, Utc};
 
 /// only allow explicit values and assign an extension type for each
 #[derive(Debug, Clone, ValueEnum)]
@@ -25,7 +24,7 @@ impl ArchiveType {
     }
 }
 
-/// Self explanatory 
+/// Self-explanatory
 fn get_file_mtime(file: &str) -> Result<i64> {
     let _file_metadata: DateTime <Utc> = fs::metadata(file.to_string())?
         .modified()?
@@ -41,14 +40,30 @@ fn get_file_mtime(file: &str) -> Result<i64> {
 
 /// Boilerplate for future function that checks mtime diff 
 /// and archives / removes if a threshold is met
-fn archive_file(file: &str, threshhold_days: i64, archive_type: ArchiveType) -> Result<()> {
+fn archive_file(file: &str, threshold_days: i64, archive_type: ArchiveType) -> Result<()> {
     let _mtime_diff = get_file_mtime(file)?;
-    if _mtime_diff > threshhold_days {
+    if _mtime_diff > threshold_days {
         println!("Archive Type: {}", archive_type.as_str());
         println!("File Path: {}", file);
     }
 
     Ok(())
+}
+
+/// Create a vector to store all *unfiltered* files in the provided directory
+fn gather_files_from_directory(dir_path: &str) -> Result<Vec<PathBuf>> {
+    let files: Vec<PathBuf> = fs::read_dir(dir_path.to_string())?
+        .filter_map(|entry| {
+            let entry = entry.ok()?;
+            let path = entry.path();
+            if path.is_file() {
+                Some(path)
+            } else {
+                None
+            }
+        })
+        .collect();
+    Ok(files)
 }
 
 #[derive(Parser, Debug)]
@@ -87,6 +102,7 @@ fn main() -> Result<()> {
     println!("Archive Method: {}", args.archive_method.as_str());
     println!("Directory: {:?}", args.directory);
     println!("Difference in file mtime and current date: {}", _test_diff);
+    println!("Files in provided directory: {:?}", gather_files_from_directory(&args.directory)?);
 
     archive_file(_test_file, 1, ArchiveType::Tar).expect("Failed to archive file");
 
