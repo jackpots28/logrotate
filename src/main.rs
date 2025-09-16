@@ -1,9 +1,16 @@
-use logrotate::{ArchiveType, archive_file, gather_files_from_directory, get_file_mtime_diff};
+#![allow(unused_imports)]
+
+use logrotate::{
+    ArchiveType, 
+    archive_file, 
+    gather_files_from_directory, 
+    get_file_mtime_diff, 
+    dry_run_details
+};
 
 use anyhow::{Result};
 use std::fmt::Debug;
 use clap::Parser;
-
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -11,7 +18,8 @@ struct Cli {
     /// Perform a dry run without making any changes
     /// Will output files marked for deletion, archival, and truncation
     #[arg(
-        long
+        long,
+        required = false,
     )]
     dry_run: bool,
 
@@ -32,20 +40,46 @@ struct Cli {
         required = true,
     )]
     directory: String,
+    
+    /// Number of days to keep archived files
+    #[arg(
+        short = 'k',
+        long = "keep-days",
+        value_name = "DAYS",
+        default_value = "7",
+        required = true,
+    )]
+    keep_days: u8,
 }
 
 fn main() -> Result<()> {
     let args = Cli::parse();
-    let _test_file = "/tmp/test_logs/test_file_16.log.tar.gz";
-    let _test_dir = "/tmp/test_logs";
-    let _test_diff = get_file_mtime_diff(_test_file)?;
+    
+    // let _test_file = "/tmp/test_logs/test_file_16.log.tar.gz";
+    // let _test_dir = "/tmp/test_logs";
+    // let _test_diff = get_file_mtime_diff(_test_file)?;
 
-    println!("Provided ARGS Archive Method: {:?}", args.archive_method);
-    println!("Provided ARGS Directory: {:?}", args.directory);
-    println!("Difference in file mtime and current date: {:?}", _test_diff);
-    println!("Files in provided directory: {:?}", gather_files_from_directory(&_test_dir)?);
+    let arg_directory = args.directory;
+    let arg_archive_method = args.archive_method;
+    let arg_keep_days = args.keep_days;
 
-    archive_file(_test_file, 1, ArchiveType::Tar).expect("Failed to archive file");
+    let file_list = gather_files_from_directory(&arg_directory)?;
+    
+    if args.dry_run {
+        println!("Dry Run with following args\n\
+         ARCHIVE METHOD: {:?}\n\
+         DIRECTORY PATH: {:?}\n\
+         KEEP FOR: {:?} DAYS", 
+                 arg_archive_method, arg_directory, arg_keep_days
+        );
+        
+        dry_run_details(file_list);
+        
+        // Early Exit
+        return Ok(());   
+    }
+
+    // archive_file(_test_file, 1, ArchiveType::Tar).expect("Failed to archive file");
 
     Ok(())
 }

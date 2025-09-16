@@ -1,5 +1,6 @@
-# Generic Files
-design_doc.md
+# Generic Files / Dirs
+*.md
+.env
 
 # Rust ENV Specific Files
 /target
@@ -7,3 +8,6 @@ Cargo.lock
 
 # Jetbrains Specific Files
 /.idea
+
+# KEEP
+!README.md
