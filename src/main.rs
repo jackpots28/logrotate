@@ -1,26 +1,21 @@
-use std::io::prelude::*;
-use std::fs::File;
-use anyhow::Result;
-use clap::{Arg, Command, ValueEnum, Parser};
-use log::{info, warn};
+use logrotate::{ArchiveType, archive_file, gather_files_from_directory, get_file_mtime_diff};
 
-#[derive(Debug, Clone, ValueEnum)]
-enum ArchiveType {
-    Tar,
-    TarGunzip,
-    Zip,
-}
+use anyhow::{Result};
+use std::fmt::Debug;
+use clap::Parser;
+
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
     /// Perform a dry run without making any changes
+    /// Will output files marked for deletion, archival, and truncation
     #[arg(
         long
     )]
     dry_run: bool,
 
-    /// Archive method to use
+    /// Archival method to use
     #[arg(
         short = 'a',
         long = "archive-method",
@@ -41,9 +36,16 @@ struct Cli {
 
 fn main() -> Result<()> {
     let args = Cli::parse();
+    let _test_file = "/tmp/test_logs/test_file_16.log.tar.gz";
+    let _test_dir = "/tmp/test_logs";
+    let _test_diff = get_file_mtime_diff(_test_file)?;
 
-    info!("-- Testing --");
-    println!("Archive Method: {:?}", args.archive_method);
-    println!("Directory: {:?}", args.directory);
+    println!("Provided ARGS Archive Method: {:?}", args.archive_method);
+    println!("Provided ARGS Directory: {:?}", args.directory);
+    println!("Difference in file mtime and current date: {:?}", _test_diff);
+    println!("Files in provided directory: {:?}", gather_files_from_directory(&_test_dir)?);
+
+    archive_file(_test_file, 1, ArchiveType::Tar).expect("Failed to archive file");
+
     Ok(())
 }
