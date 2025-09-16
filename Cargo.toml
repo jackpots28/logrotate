@@ -5,7 +5,7 @@ edition = "2024"
 
 authors = ["Jack Sims jack.m.sims@protonmail.com"]
 license = "Apache-2.0"
-description = "Cli tool for rotating files within specified directory."
+description = "Cli tool for rotating / archiving files within specified directory."
 readme = "README.md"
 homepage = "https://github.com/jackpots28/logrotate"
 repository = "https://github.com/jackpots28/logrotate"

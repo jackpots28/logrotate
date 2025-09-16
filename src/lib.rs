@@ -64,6 +64,13 @@ pub fn gather_files_from_directory(dir_path: &str) -> anyhow::Result<Vec<PathBuf
     Ok(files)
 }
 
+/// Do not worry about testing this function - only renders a file list to stdout
+pub fn dry_run_details(file_list: Vec<PathBuf>) {
+    for file in file_list {
+        println!("File: {}", file.to_str().unwrap());
+    }
+}
+
 
 /// Fake test function
 pub fn test_add(left: u64, right: u64) -> u64 {
