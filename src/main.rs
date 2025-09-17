@@ -53,11 +53,9 @@ struct Cli {
 }
 
 fn main() -> Result<()> {
-    let args = Cli::parse();
-    
-    // let _test_file = "/tmp/test_logs/test_file_16.log.tar.gz";
-    // let _test_dir = "/tmp/test_logs";
-    // let _test_diff = get_file_mtime_diff(_test_file)?;
+    // Bug with Clap Derive - False error: 
+    // E0599 No function or associated item 'parse' found in the current scope for struct Cli
+    let args = <Cli as Parser>::parse();
 
     let arg_directory = args.directory;
     let arg_archive_method = args.archive_method;
