@@ -1,6 +1,7 @@
 # Generic Files / Dirs
 *.md
 .env
+*-report.html
 
 # Rust ENV Specific Files
 /target

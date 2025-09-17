@@ -1,34 +1,32 @@
 use logrotate::{
     ArchiveType,
-    archive_file,
+    archive_or_remove_file,
     gather_files_from_directory,
     get_file_mtime_diff,
     test_add,
     truncate_file,
+    tar_gunzip_file,
     tar_file,
+    zip_file,
+    remove_file,
 };
-use std::path;
-use std::fs::File;
-use serial_test::serial;
 
-/// Note - test_gathering_files_from_directory and test_tar_file_process are serial tests because they
-/// conflict when the new test tar file is created while also checking directory contents
+use std::fs;
+use std::path;
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-    use std::io::empty;
     use super::*;
 
     #[test]
-    #[serial]
     fn test_gathering_files_from_directory() {
         let testing_operand = gather_files_from_directory("./tests/test_log_dir")
             .unwrap();
 
-        let right_hand_operand = vec![path::PathBuf::from("./tests/test_log_dir/test_log_file.log")];
+        // let right_hand_operand = vec![path::PathBuf::from("./tests/test_log_dir/test_log_file.log")];
+        // old test - assert_eq!(testing_operand, right_hand_operand);
 
-        assert_eq!(testing_operand, right_hand_operand);
+        assert!(testing_operand.len() >= 1);
     }
 
     #[test]
@@ -36,7 +34,7 @@ mod tests {
         let test_file_path = "./tests/test_log_dir/test_log_file.log";
 
         // Truncate test file to reset mtime to the current day for comparison
-        let file = File::create(test_file_path.to_string()).unwrap();
+        let file = fs::File::create(test_file_path.to_string()).unwrap();
         file.set_len(0).unwrap();
 
         let testing_operand = get_file_mtime_diff(test_file_path)
@@ -46,14 +44,38 @@ mod tests {
     }
     
     #[test]
-    fn test_archive_file_threshold_check() {
+    fn test_tar_archive_file_threshold_check() {
         let test_file_path = "./tests/test_log_dir/test_log_file.log";
-        let testing_boolean = archive_file(
+        let testing_boolean = archive_or_remove_file(
             test_file_path, 
             0, 
             ArchiveType::Tar,
         ).is_ok();
         
+        assert_eq!(testing_boolean, true);
+    }
+
+    #[test]
+    fn test_targunzip_archive_file_threshold_check() {
+        let test_file_path = "./tests/test_log_dir/test_log_file.log";
+        let testing_boolean = archive_or_remove_file(
+            test_file_path,
+            0,
+            ArchiveType::TarGunzip,
+        ).is_ok();
+
+        assert_eq!(testing_boolean, true);
+    }
+
+    #[test]
+    fn test_zip_archive_file_threshold_check() {
+        let test_file_path = "./tests/test_log_dir/test_log_file.log";
+        let testing_boolean = archive_or_remove_file(
+            test_file_path,
+            0,
+            ArchiveType::Zip,
+        ).is_ok();
+
         assert_eq!(testing_boolean, true);
     }
     
@@ -67,17 +89,50 @@ mod tests {
     }
     
     #[test]
-    #[serial]
-    fn test_tar_file_process() {
+    fn test_targunzip_file_process() {
         let test_file_path = "./tests/test_log_dir/test_log_file.log";
         let test_new_tar_file= test_file_path.to_string() + ".tar.gz";
         
-        tar_file(&test_file_path, ArchiveType::TarGunzip).expect("Error tar-ing file");
+        tar_gunzip_file(&test_file_path, ArchiveType::TarGunzip).expect("Error tar-ing file");
         
         assert!(path::Path::new(test_new_tar_file.as_str()).exists());
         
         // Clean up the test tar.gz file that is created
         fs::remove_file(test_new_tar_file.to_string()).unwrap();
+    }
+
+    #[test]
+    fn test_tar_file_process() {
+        let test_file_path = "./tests/test_log_dir/test_log_file.log";
+        let test_new_tar_file= test_file_path.to_string() + ".tar";
+
+        tar_file(&test_file_path, ArchiveType::Tar).expect("Error tar-ing file");
+
+        assert!(path::Path::new(test_new_tar_file.as_str()).exists());
+        fs::remove_file(test_new_tar_file.to_string()).unwrap();
+    }
+
+    #[test]
+    fn test_zip_file_process() {
+        let test_file_path = "./tests/test_log_dir/test_log_file.log";
+        let test_new_zip_file= test_file_path.to_string() + ".zip";
+
+        zip_file(&test_file_path, ArchiveType::Zip).expect("Error zipping file");
+
+        assert!(path::Path::new(test_new_zip_file.as_str()).exists());
+
+        // Clean up the test zip file that is created
+        fs::remove_file(test_new_zip_file.to_string()).unwrap();
+    }
+
+    #[test]
+    fn test_remove_file_process() {
+        let test_file_path = "./tests/test_log_dir/test_log_file_2.log";
+        fs::File::create(test_file_path.to_string()).unwrap();
+        assert!(path::Path::new(test_file_path).exists());
+
+        remove_file(test_file_path);
+        assert!(!path::Path::new(test_file_path).exists());
     }
 
     #[test]

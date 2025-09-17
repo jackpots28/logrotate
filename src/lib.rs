@@ -41,7 +41,7 @@ pub fn get_file_mtime_diff(file: &str) -> anyhow::Result<i64> {
 
 /// Boilerplate for future function that checks mtime diff
 /// and archives / removes if a threshold is met
-pub fn archive_file(file: &str, threshold_days: i64, archive_type: ArchiveType) -> anyhow::Result<()> {
+pub fn archive_or_remove_file(file: &str, threshold_days: i64, archive_type: ArchiveType) -> anyhow::Result<()> {
     let _mtime_diff = get_file_mtime_diff(file)?;
     if _mtime_diff > threshold_days {
         println!("Archive Type: {}", archive_type.as_str());
@@ -74,7 +74,7 @@ pub fn truncate_file(file_path: &str) {
 }
 
 /// Create a tarball of a provided file and compress
-pub fn tar_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()> {
+pub fn tar_gunzip_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()> {
     if archive_type == ArchiveType::TarGunzip {
         let new_file_path = file_path.to_string() + "." +archive_type.as_str();
         let tar_gz_file = fs::File::create(new_file_path.clone())?;
@@ -89,6 +89,42 @@ pub fn tar_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()
     else { Err(anyhow::anyhow!("Archive Type for 'TarGunzip' did not match expected type"))? }
 }
 
+/// Create a non-compressed tarball of a provided file
+pub fn tar_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()> {
+    if archive_type == ArchiveType::Tar {
+        let new_file_path = file_path.to_string() + "." +archive_type.as_str();
+        let tar_file = fs::File::create(new_file_path.clone())?;
+
+        let mut tar_builder = Builder::new(tar_file);
+        let mut old_file = fs::File::open(file_path.to_string())?;
+        
+        tar_builder.append_file(new_file_path, &mut old_file)?;
+        tar_builder.finish()?;
+        Ok(())
+    }
+    else { Err(anyhow::anyhow!("Archive Type for 'Tar' did not match expected type"))? }
+}
+
+/// Create a zip archive of a provided file
+pub fn zip_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()> {
+    if archive_type == ArchiveType::Zip {
+        let new_file_path = file_path.to_string() + "." +archive_type.as_str();
+        let zip_file = fs::File::create(new_file_path.clone())?;
+
+        let mut zip_builder = zip::ZipWriter::new(zip_file);
+        let options: zip::write::FileOptions<'_, ()> = zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+
+        zip_builder.start_file(file_path.to_string(), options)?;
+        zip_builder.finish()?;
+        Ok(())
+    }
+    else { Err(anyhow::anyhow!("Archive Type for 'Zip' did not match expected type"))? }
+}
+
+/// Remove a provided file via it's path
+pub fn remove_file(file_path: &str) {
+    fs::remove_file(file_path.to_string()).unwrap();
+}
 
 /// Do not worry about testing this function - only renders a file list to stdout
 pub fn dry_run_details(file_list: Vec<path::PathBuf>) {

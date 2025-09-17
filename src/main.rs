@@ -1,10 +1,10 @@
 #![allow(unused_imports)]
 
 use logrotate::{
-    ArchiveType, 
-    archive_file, 
-    gather_files_from_directory, 
-    get_file_mtime_diff, 
+    ArchiveType,
+    archive_or_remove_file,
+    gather_files_from_directory,
+    get_file_mtime_diff,
     dry_run_details
 };
 
@@ -13,7 +13,7 @@ use std::fmt::Debug;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about = "Rotate / Archive files within provided directory", long_about = None)]
 struct Cli {
     /// Perform a dry run without making any changes
     /// Will output files marked for deletion, archival, and truncation
