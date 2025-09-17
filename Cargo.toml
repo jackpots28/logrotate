@@ -17,9 +17,8 @@ anyhow = "1.0.99"
 clap = { version = "4.5.47", features = ["derive"] }
 flate2 = "1.1.2"
 tar = "0.4.44"
-zip = "0.6.6"
+zip = "5.1.1"
 chrono = "0.4.42"
-serial_test = "3.2.0"
 
 [[bin]]
 name="logrotate"
