@@ -41,14 +41,14 @@ pub fn get_file_mtime_diff(file: &str) -> anyhow::Result<i64> {
 
 /// Boilerplate for future function that checks mtime diff
 /// and archives / removes if a threshold is met
-pub fn archive_or_remove_file(file: &str, threshold_days: i64, archive_type: ArchiveType) -> anyhow::Result<()> {
+pub fn archive_or_remove_file(file: &str, threshold_days: i64) -> anyhow::Result<i32> {
     let _mtime_diff = get_file_mtime_diff(file)?;
     if _mtime_diff > threshold_days {
-        println!("Archive Type: {}", archive_type.as_str());
-        println!("File Path: {}", file);
+        Ok(1)
     }
-
-    Ok(())
+    else {
+        Ok(0)
+    }
 }
 
 /// Create a vector to store all *unfiltered* files in the provided directory
@@ -97,7 +97,7 @@ pub fn tar_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()
 
         let mut tar_builder = Builder::new(tar_file);
         let mut old_file = fs::File::open(file_path.to_string())?;
-        
+
         tar_builder.append_file(new_file_path, &mut old_file)?;
         tar_builder.finish()?;
         Ok(())
@@ -127,9 +127,28 @@ pub fn remove_file(file_path: &str) {
 }
 
 /// Do not worry about testing this function - only renders a file list to stdout
-pub fn dry_run_details(file_list: Vec<path::PathBuf>) {
+#[cfg(not(tarpaulin_include))]
+pub fn dry_run_details(file_list: Vec<path::PathBuf>, threshold_days: i64, archive_type: ArchiveType) {
     for file in file_list {
-        println!("File: {}", file.to_str().unwrap());
+        let mut _temp_archive_check = "";
+        if archive_or_remove_file(file.to_str().unwrap(), threshold_days).unwrap() == 1 {
+            _temp_archive_check = "Archiving";
+            
+            println!("File: {} | Status: {} | Archive Type: {}",
+                     file.to_str().unwrap(),
+                     _temp_archive_check,
+                     archive_type.as_str()
+            );
+        }
+        else {
+            _temp_archive_check = "Unchanged";
+
+            println!("File: {} | Status: {}",
+                     file.to_str().unwrap(),
+                     _temp_archive_check,
+            );
+        }
+
     }
 }
 

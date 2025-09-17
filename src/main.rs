@@ -52,6 +52,7 @@ struct Cli {
     keep_days: u8,
 }
 
+#[cfg(not(tarpaulin_include))]
 fn main() -> Result<()> {
     // Bug with Clap Derive - False error: 
     // E0599 No function or associated item 'parse' found in the current scope for struct Cli
@@ -71,7 +72,7 @@ fn main() -> Result<()> {
                  arg_archive_method, arg_directory, arg_keep_days
         );
         
-        dry_run_details(file_list);
+        dry_run_details(file_list, arg_keep_days.into(), arg_archive_method);
         
         // Early Exit
         return Ok(());   
