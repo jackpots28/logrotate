@@ -1,11 +1,14 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path;
+use tar::Builder;
+use flate2::Compression;
+use flate2::write::GzEncoder;
 use chrono::{DateTime, Utc};
 use clap::ValueEnum;
 
 /// only allow explicit values and assign an extension type for each
 /// this is used to only allow specific archive types as flags for cli
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum, PartialEq, Eq)]
 pub enum ArchiveType {
     Tar,
     TarGunzip,
@@ -49,8 +52,8 @@ pub fn archive_file(file: &str, threshold_days: i64, archive_type: ArchiveType) 
 }
 
 /// Create a vector to store all *unfiltered* files in the provided directory
-pub fn gather_files_from_directory(dir_path: &str) -> anyhow::Result<Vec<PathBuf>> {
-    let files: Vec<PathBuf> = fs::read_dir(dir_path.to_string())?
+pub fn gather_files_from_directory(dir_path: &str) -> anyhow::Result<Vec<path::PathBuf>> {
+    let files: Vec<path::PathBuf> = fs::read_dir(dir_path.to_string())?
         .filter_map(|entry| {
             let entry = entry.ok()?;
             let path = entry.path();
@@ -64,8 +67,31 @@ pub fn gather_files_from_directory(dir_path: &str) -> anyhow::Result<Vec<PathBuf
     Ok(files)
 }
 
+/// Truncate a provided file
+pub fn truncate_file(file_path: &str) {
+    let file = fs::File::create(file_path.to_string()).unwrap();
+    file.set_len(0).unwrap();
+}
+
+/// Create a tarball of a provided file and compress
+pub fn tar_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()> {
+    if archive_type == ArchiveType::TarGunzip {
+        let new_file_path = file_path.to_string() + "." +archive_type.as_str();
+        let tar_gz_file = fs::File::create(new_file_path.clone())?;
+
+        let encoder = GzEncoder::new(tar_gz_file, Compression::default());
+        let mut tar_builder = Builder::new(encoder);
+        
+        tar_builder.append_path_with_name(new_file_path, file_path.to_string())?;
+        tar_builder.finish()?;
+        Ok(())
+    }
+    else { Err(anyhow::anyhow!("Archive Type for 'TarGunzip' did not match expected type"))? }
+}
+
+
 /// Do not worry about testing this function - only renders a file list to stdout
-pub fn dry_run_details(file_list: Vec<PathBuf>) {
+pub fn dry_run_details(file_list: Vec<path::PathBuf>) {
     for file in file_list {
         println!("File: {}", file.to_str().unwrap());
     }
