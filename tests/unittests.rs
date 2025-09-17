@@ -30,17 +30,35 @@ mod tests {
     }
 
     #[test]
-    fn test_get_file_mtime() {
+    fn test_get_file_mtime_diff() {
         let test_file_path = "./tests/test_log_dir/test_log_file.log";
 
         // Truncate test file to reset mtime to the current day for comparison
         let file = fs::File::create(test_file_path.to_string()).unwrap();
         file.set_len(0).unwrap();
 
-        let testing_operand = get_file_mtime_diff(test_file_path)
-            .unwrap();
+        let diff_testing_operand = get_file_mtime_diff(test_file_path).unwrap();
+        let ok_testing_operand = get_file_mtime_diff(test_file_path);
 
-        assert_eq!(testing_operand, 0);
+        assert_eq!(diff_testing_operand, 0);
+        assert_eq!(ok_testing_operand.ok(), Some(0));
+    }
+    
+    #[test]
+    fn test_archive_or_remove_file_threshold_check() {
+        let test_file_path = "./tests/test_log_dir/test_log_file.log";
+        let testing_greater_than_threshold = archive_or_remove_file(
+            test_file_path, 
+            1,
+        ).unwrap();
+
+        let testing_less_than_threshold = archive_or_remove_file(
+            test_file_path, 
+            -1,
+        ).unwrap();
+        
+        assert_eq!(testing_greater_than_threshold, 0);
+        assert_eq!(testing_less_than_threshold, 1);
     }
     
     #[test]
@@ -48,11 +66,10 @@ mod tests {
         let test_file_path = "./tests/test_log_dir/test_log_file.log";
         let testing_boolean = archive_or_remove_file(
             test_file_path, 
-            0, 
-            ArchiveType::Tar,
+            0,
         ).is_ok();
         
-        assert_eq!(testing_boolean, true);
+        assert!(testing_boolean);
     }
 
     #[test]
@@ -61,10 +78,9 @@ mod tests {
         let testing_boolean = archive_or_remove_file(
             test_file_path,
             0,
-            ArchiveType::TarGunzip,
         ).is_ok();
 
-        assert_eq!(testing_boolean, true);
+        assert!(testing_boolean);
     }
 
     #[test]
@@ -73,10 +89,9 @@ mod tests {
         let testing_boolean = archive_or_remove_file(
             test_file_path,
             0,
-            ArchiveType::Zip,
         ).is_ok();
 
-        assert_eq!(testing_boolean, true);
+        assert!(testing_boolean);
     }
     
     #[test]
@@ -123,6 +138,19 @@ mod tests {
 
         // Clean up the test zip file that is created
         fs::remove_file(test_new_zip_file.to_string()).unwrap();
+    }
+
+    #[test]
+    fn test_wrong_archive_types() {
+        let test_file_path = "./tests/test_log_dir/test_log_file.log";
+
+        let tar_result = tar_file(test_file_path, ArchiveType::TarGunzip);
+        let targunzip_result = tar_gunzip_file(test_file_path, ArchiveType::Zip);
+        let zip_result = zip_file(test_file_path, ArchiveType::Tar);
+
+        assert!(tar_result.is_err());
+        assert!(targunzip_result.is_err());
+        assert!(zip_result.is_err());
     }
 
     #[test]
