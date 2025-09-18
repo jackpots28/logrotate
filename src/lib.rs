@@ -1,8 +1,10 @@
 // old - use strum_macros::Display;
 
-use std::fmt;
 use std::fs;
+use std::io;
+use std::fmt;
 use std::path;
+use std::path::Path;
 use tar::Builder;
 use flate2::Compression;
 use flate2::write::GzEncoder;
@@ -99,7 +101,7 @@ pub fn get_file_mtime_diff(file: &str) -> anyhow::Result<i64> {
 
 /// Boilerplate for future function that checks mtime diff
 /// and archives / removes if a threshold is met
-pub fn archive_remove_or_truncate_file(file: &str, threshold_days: i64) -> anyhow::Result<i32> {
+pub fn archive_remove_truncate_file_bucketing(file: &str, threshold_days: i64) -> anyhow::Result<i32> {
     let _mtime_diff = get_file_mtime_diff(file)?;
     let _file_extension = get_file_extension(file);
 
@@ -109,18 +111,49 @@ pub fn archive_remove_or_truncate_file(file: &str, threshold_days: i64) -> anyho
         "zip" => true,
         _ => false,
     };
-    
+
     let check_if_unknown_file = match _file_extension.as_str() {
         "unknown" => true,
         _ => false,
     };
 
     match _mtime_diff {
-        _ if (_mtime_diff > threshold_days) && check_if_archive_file && !check_if_unknown_file => Ok(1), // Remove
-        _ if (_mtime_diff <= threshold_days) && !check_if_archive_file && !check_if_unknown_file => Ok(0), // Archive
-        _ if (_mtime_diff <= threshold_days) && !check_if_archive_file && !check_if_unknown_file => Ok(2), // Truncate
+        _ if (_mtime_diff > threshold_days)
+            && check_if_archive_file
+            && !check_if_unknown_file => Ok(1), // Remove
+        _ if (_mtime_diff < threshold_days)
+            && (_mtime_diff <= 1)
+            && !check_if_archive_file
+            && !check_if_unknown_file => Ok(0), // Archive
+        _ if (_mtime_diff <= threshold_days)
+            && (_mtime_diff > 1)
+            && !check_if_archive_file
+            && !check_if_unknown_file => Ok(2), // Truncate
         _ => Ok(3) // Unchanged
     }
+}
+
+///
+pub fn archive_selection_and_process(file_path: &str, archive_type: ArchiveType) {
+    match archive_type {
+        ArchiveType::Tar => {
+            tar_file(file_path, archive_type).ok();
+            truncate_file(file_path);
+        }
+        ArchiveType::TarGunzip => {
+            tar_gunzip_file(file_path, archive_type).ok();
+            truncate_file(file_path);
+        }
+        ArchiveType::Zip => {
+            zip_file(file_path, archive_type).ok();
+            truncate_file(file_path);
+        }
+    }
+}
+
+pub fn get_date() -> String {
+    let now: DateTime<Utc> = Utc::now();
+    now.format("%Y_%m_%d").to_string()
 }
 
 /// Create a vector to store all *unfiltered* files in the provided directory
@@ -148,13 +181,14 @@ pub fn truncate_file(file_path: &str) {
 /// Create a tarball of a provided file and compress
 pub fn tar_gunzip_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()> {
     if archive_type == ArchiveType::TarGunzip {
-        let new_file_path = file_path.to_string() + "." +archive_type.as_str();
+        let old_file = Path::new(file_path).file_name().unwrap().to_str().unwrap();
+        let new_file_path = file_path.to_string() + "_" + &get_date() + "." +archive_type.as_str();
         let tar_gz_file = fs::File::create(new_file_path.clone())?;
 
         let encoder = GzEncoder::new(tar_gz_file, Compression::default());
         let mut tar_builder = Builder::new(encoder);
         
-        tar_builder.append_path_with_name(new_file_path, file_path.to_string())?;
+        tar_builder.append_path_with_name(file_path.to_string(), old_file.to_string())?;
         tar_builder.finish()?;
         Ok(())
     }
@@ -164,14 +198,15 @@ pub fn tar_gunzip_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Re
 /// Create a non-compressed tarball of a provided file
 pub fn tar_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()> {
     if archive_type == ArchiveType::Tar {
-        let new_file_path = file_path.to_string() + "." +archive_type.as_str();
+        let old_file = Path::new(file_path).file_name().unwrap().to_str().unwrap();
+        let new_file_path = file_path.to_string() + "_" + &get_date() + "." +archive_type.as_str();
         let tar_file = fs::File::create(new_file_path.clone())?;
 
         let mut tar_builder = Builder::new(tar_file);
-        let mut old_file = fs::File::open(file_path.to_string())?;
 
-        tar_builder.append_file(new_file_path, &mut old_file)?;
+        tar_builder.append_path_with_name(file_path.to_string(), old_file.to_string())?;
         tar_builder.finish()?;
+
         Ok(())
     }
     else { Err(anyhow::anyhow!("Archive Type for 'Tar' did not match expected type"))? }
@@ -180,13 +215,17 @@ pub fn tar_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()
 /// Create a zip archive of a provided file
 pub fn zip_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()> {
     if archive_type == ArchiveType::Zip {
-        let new_file_path = file_path.to_string() + "." +archive_type.as_str();
+        let new_file_path = file_path.to_string() + "_" + &get_date() + "." +archive_type.as_str();
         let zip_file = fs::File::create(new_file_path.clone())?;
 
         let mut zip_builder = zip::ZipWriter::new(zip_file);
         let options: zip::write::FileOptions<'_, ()> = zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
+
+        let mut source_file = fs::File::open(file_path.to_string())?;
         zip_builder.start_file(file_path.to_string(), options)?;
+
+        io::copy(&mut source_file, &mut zip_builder)?;
         zip_builder.finish()?;
         Ok(())
     }
@@ -213,10 +252,10 @@ pub fn remove_file(file_path: &str) {
 pub fn dry_run_details(file_list: Vec<path::PathBuf>, threshold_days: i64, archive_type: ArchiveType) {
     for file in file_list {
         let mut _temp_archive_check = "";
-        match archive_remove_or_truncate_file(file.to_str().unwrap(), threshold_days).unwrap() {
+        match archive_remove_truncate_file_bucketing(file.to_str().unwrap(), threshold_days).unwrap() {
             0 => println!("File: {} | Status: {} | Action Type: Archiving | File Extension: {}",
                           file.to_str().unwrap(),
-                          archive_type.as_str(), 
+                          archive_type.as_str(),
                           get_file_extension(file.to_str().unwrap()),
             ),
             1 => println!("File: {} | Action Type: Removing | File Extension: {}",
@@ -239,21 +278,10 @@ pub fn dry_run_details(file_list: Vec<path::PathBuf>, threshold_days: i64, archi
 #[cfg(not(tarpaulin_include))]
 pub fn actual_run(file_list: Vec<path::PathBuf>, threshold_days: i64, archive_type: ArchiveType) {
     for file in file_list {
-        let mut _temp_archive_check = "";
-        match archive_remove_or_truncate_file(file.to_str().unwrap(), threshold_days).unwrap() {
-            0 => println!("File: {} | Status: {} | Action Type: Archiving | File Extension: {}",
-                          file.to_str().unwrap(),
-                          archive_type.as_str(),
-                          get_file_extension(file.to_str().unwrap()),
-            ),
-            1 => println!("File: {} | Action Type: Removing | File Extension: {}",
-                          file.to_str().unwrap(),
-                          get_file_extension(file.to_str().unwrap()),
-            ),
-            2 => println!("File: {} | Action Type: Truncating | File Extension: {}",
-                          file.to_str().unwrap(),
-                          get_file_extension(file.to_str().unwrap()),
-            ),
+        match archive_remove_truncate_file_bucketing(file.to_str().unwrap(), threshold_days).unwrap() {
+            0 => archive_selection_and_process(file.to_str().unwrap(), archive_type.clone()),
+            1 => remove_file(file.to_str().unwrap()),
+            2 => truncate_file(file.to_str().unwrap()),
             3 => println!("File: {} | Action Type: Unchanged | File Extension: {}",
                           file.to_str().unwrap(),
                           get_file_extension(file.to_str().unwrap()),

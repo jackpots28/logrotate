@@ -2,7 +2,7 @@
 
 use logrotate::{
     ArchiveType,
-    archive_remove_or_truncate_file,
+    archive_remove_truncate_file_bucketing,
     gather_files_from_directory,
     get_file_mtime_diff,
     dry_run_details,
