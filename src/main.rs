@@ -65,7 +65,7 @@ fn main() -> Result<()> {
     let file_list = gather_files_from_directory(&arg_directory)?;
     
     if args.dry_run {
-        println!("Dry Run with following args\n\
+        println!("Dry Run with the following args...\n\
          ARCHIVE METHOD: {:?}\n\
          DIRECTORY PATH: {:?}\n\
          KEEP FOR: {:?} DAYS", 

@@ -1,3 +1,6 @@
+// old - use strum_macros::Display;
+
+use std::fmt;
 use std::fs;
 use std::path;
 use tar::Builder;
@@ -5,6 +8,7 @@ use flate2::Compression;
 use flate2::write::GzEncoder;
 use chrono::{DateTime, Utc};
 use clap::ValueEnum;
+use std::str::FromStr;
 
 /// only allow explicit values and assign an extension type for each
 /// this is used to only allow specific archive types as flags for cli
@@ -20,10 +24,64 @@ impl ArchiveType {
         match self {
             ArchiveType::Tar => "tar",
             ArchiveType::TarGunzip => "tar.gz",
-            ArchiveType::Zip => "zip"
+            ArchiveType::Zip => "zip",
         }
     }
 }
+
+
+/// This incorporates some of the archive types along with several other extensions for possible log files
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FileType {
+    Binary,
+    Txt,
+    Log,
+    Json,
+    Csv,
+    Xml,
+    Gz,
+    Tar,
+    Zip,
+    Unknown,
+}
+
+impl fmt::Display for FileType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            FileType::Txt => "txt",
+            FileType::Log => "log",
+            FileType::Json => "json",
+            FileType::Csv => "csv",
+            FileType::Xml => "xml",
+            FileType::Binary => "bin",
+            FileType::Gz => "gz",
+            FileType::Tar => "tar",
+            FileType::Zip => "zip",
+            FileType::Unknown => "unknown",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+impl FromStr for FileType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "txt" | "text" => Ok(FileType::Txt),
+            "log" => Ok(FileType::Log),
+            "json" => Ok(FileType::Json),
+            "csv" => Ok(FileType::Csv),
+            "xml" => Ok(FileType::Xml),
+            "bin" => Ok(FileType::Binary),
+            "gz" => Ok(FileType::Gz),
+            "tar" => Ok(FileType::Tar),
+            "zip" => Ok(FileType::Zip),
+            _ => Ok(FileType::Unknown),
+        }
+    }
+}
+
 
 /// Self-explanatory
 pub fn get_file_mtime_diff(file: &str) -> anyhow::Result<i64> {
@@ -121,6 +179,16 @@ pub fn zip_file(file_path: &str, archive_type: ArchiveType) -> anyhow::Result<()
     else { Err(anyhow::anyhow!("Archive Type for 'Zip' did not match expected type"))? }
 }
 
+/// Get a file extension type from a provided file path
+pub fn get_file_extension(file_path: &str) -> String {
+    path::Path::new(file_path)
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| FileType::from_str(ext).unwrap_or(FileType::Unknown))
+        .map(|file_type| file_type.to_string())
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
 /// Remove a provided file via it's path
 pub fn remove_file(file_path: &str) {
     fs::remove_file(file_path.to_string()).unwrap();
@@ -134,18 +202,20 @@ pub fn dry_run_details(file_list: Vec<path::PathBuf>, threshold_days: i64, archi
         if archive_or_remove_file(file.to_str().unwrap(), threshold_days).unwrap() == 1 {
             _temp_archive_check = "Archiving";
             
-            println!("File: {} | Status: {} | Archive Type: {}",
+            println!("File: {} | Status: {} | Archive Type: {} | File Extension: {}",
                      file.to_str().unwrap(),
                      _temp_archive_check,
-                     archive_type.as_str()
+                     archive_type.as_str(),
+                     get_file_extension(file.to_str().unwrap()),
             );
         }
         else {
             _temp_archive_check = "Unchanged";
 
-            println!("File: {} | Status: {}",
+            println!("File: {} | Status: {} | File Extension: {}",
                      file.to_str().unwrap(),
                      _temp_archive_check,
+                     get_file_extension(file.to_str().unwrap()),
             );
         }
 
