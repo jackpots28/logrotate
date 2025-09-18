@@ -53,7 +53,7 @@ struct Cli {
     keep_days: u8,
 }
 
-#[cfg(not(tarpaulin_include))]
+#[cfg_attr(coverage_nightly, coverage(off))]
 fn main() -> Result<()> {
     // Bug with Clap Derive - False error: 
     // E0599 No function or associated item 'parse' found in the current scope for struct Cli

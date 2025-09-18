@@ -248,7 +248,7 @@ pub fn remove_file(file_path: &str) {
 }
 
 /// Do not worry about testing this function - only renders a file list to stdout
-#[cfg(not(tarpaulin_include))]
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn dry_run_details(file_list: Vec<path::PathBuf>, threshold_days: i64, archive_type: ArchiveType) {
     for file in file_list {
         let mut _temp_archive_check = "";
@@ -275,7 +275,7 @@ pub fn dry_run_details(file_list: Vec<path::PathBuf>, threshold_days: i64, archi
     }
 }
 
-#[cfg(not(tarpaulin_include))]
+#[cfg_attr(coverage_nightly, coverage(off))]
 pub fn actual_run(file_list: Vec<path::PathBuf>, threshold_days: i64, archive_type: ArchiveType) {
     for file in file_list {
         match archive_remove_truncate_file_bucketing(file.to_str().unwrap(), threshold_days).unwrap() {

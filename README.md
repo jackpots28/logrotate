@@ -37,6 +37,25 @@ archiving, removing, and truncating files in a provided directory.
 
 ---
 
+## Support:
+
+|     File Extension    | Supported | Planned |
+|:---------------------:|:---------:|:-------:|
+|          log          |     ✅     |    -    |
+|          txt          |     ✅     |    -    |
+|          text         |     ✅     |    -    |
+|          bin          |     ❌     |    ❌    |
+|          xml          |     ✅     |    -    |
+|          csv          |     ✅     |    -    |
+|          json         |     ✅     |    -    |
+|          elf          |     ❌     |    ❌    |
+|          cef          |     ❌     |    ✅    |
+|          clf          |     ❌     |    ✅    |
+|         syslog        |     ❌     |    ✅    |
+| Any Unnamed Extension |     ❌     |    ❓    |
+
+---
+
 ## Build Locally:
 
 _Requires Rust (minimum stable-2024 & any-architecture)_
@@ -48,26 +67,31 @@ _Requires Rust (minimum stable-2024 & any-architecture)_
   sudo cp target/release/logrotate /usr/bin
 ```
 
-Built binary is ~980 kb on disk
+Built binary is ~2Mb on disk
 
-## Install Online:
+## Install Prebuilt:
 
 Brew (MacOS):
 ```bash
     TBD
 ```
 
-Linux (Fedora / CentOS / RHEL / Rocky - dnf or yum):
+Linux (Fedora / CentOS / RHEL / Rocky - dnf or yum | *x86-64, aarch64, ppc64le*):
 ```bash
     TDB
 ```
 
-Linux (Debian - apt):
+Linux (Debian - apt | *x86-64, aarch64*):
 ```bash
     TBD
 ```
 
 Windows (x86-64 assumed):
+```bash
+    TBD
+```
+
+Crates.io
 ```bash
     TBD
 ```

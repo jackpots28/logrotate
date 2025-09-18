@@ -1,6 +1,6 @@
 [package]
 name = "logrotate"
-version = "0.1.0"
+version = "0.0.0"
 edition = "2024"
 
 authors = ["Jack Sims jack.m.sims@protonmail.com"]
@@ -23,7 +23,7 @@ chrono = "0.4.42"
 [dev-dependencies]
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)'] }
 
 [[bin]]
 name="logrotate"
