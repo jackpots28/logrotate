@@ -2,10 +2,11 @@
 
 use logrotate::{
     ArchiveType,
-    archive_or_remove_file,
+    archive_remove_or_truncate_file,
     gather_files_from_directory,
     get_file_mtime_diff,
-    dry_run_details
+    dry_run_details,
+    actual_run,
 };
 
 use anyhow::{Result};
@@ -73,12 +74,10 @@ fn main() -> Result<()> {
         );
         
         dry_run_details(file_list, arg_keep_days.into(), arg_archive_method);
-        
-        // Early Exit
-        return Ok(());   
     }
-
-    // archive_file(_test_file, 1, ArchiveType::Tar).expect("Failed to archive file");
+    else {
+        actual_run(file_list, arg_keep_days.into(), arg_archive_method);
+    }
 
     Ok(())
 }

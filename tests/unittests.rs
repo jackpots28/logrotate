@@ -1,6 +1,6 @@
 use logrotate::{
     ArchiveType,
-    archive_or_remove_file,
+    archive_remove_or_truncate_file,
     gather_files_from_directory,
     get_file_mtime_diff,
     test_add,
@@ -47,24 +47,24 @@ mod tests {
     #[test]
     fn test_archive_or_remove_file_threshold_check() {
         let test_file_path = "./tests/test_log_dir/test_log_file.log";
-        let testing_greater_than_threshold = archive_or_remove_file(
+        let testing_greater_than_threshold = archive_remove_or_truncate_file(
             test_file_path, 
             1,
         ).unwrap();
 
-        let testing_less_than_threshold = archive_or_remove_file(
+        let testing_less_than_threshold = archive_remove_or_truncate_file(
             test_file_path, 
             -1,
         ).unwrap();
         
         assert_eq!(testing_greater_than_threshold, 0);
-        assert_eq!(testing_less_than_threshold, 1);
+        assert_eq!(testing_less_than_threshold, 3);
     }
     
     #[test]
     fn test_tar_archive_file_threshold_check() {
         let test_file_path = "./tests/test_log_dir/test_log_file.log";
-        let testing_boolean = archive_or_remove_file(
+        let testing_boolean = archive_remove_or_truncate_file(
             test_file_path, 
             0,
         ).is_ok();
@@ -75,7 +75,7 @@ mod tests {
     #[test]
     fn test_targunzip_archive_file_threshold_check() {
         let test_file_path = "./tests/test_log_dir/test_log_file.log";
-        let testing_boolean = archive_or_remove_file(
+        let testing_boolean = archive_remove_or_truncate_file(
             test_file_path,
             0,
         ).is_ok();
@@ -86,7 +86,7 @@ mod tests {
     #[test]
     fn test_zip_archive_file_threshold_check() {
         let test_file_path = "./tests/test_log_dir/test_log_file.log";
-        let testing_boolean = archive_or_remove_file(
+        let testing_boolean = archive_remove_or_truncate_file(
             test_file_path,
             0,
         ).is_ok();

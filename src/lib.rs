@@ -73,7 +73,7 @@ impl FromStr for FileType {
             "json" => Ok(FileType::Json),
             "csv" => Ok(FileType::Csv),
             "xml" => Ok(FileType::Xml),
-            "bin" => Ok(FileType::Binary),
+            "bin" => Ok(FileType::Unknown),
             "gz" => Ok(FileType::Gz),
             "tar" => Ok(FileType::Tar),
             "zip" => Ok(FileType::Zip),
@@ -99,13 +99,27 @@ pub fn get_file_mtime_diff(file: &str) -> anyhow::Result<i64> {
 
 /// Boilerplate for future function that checks mtime diff
 /// and archives / removes if a threshold is met
-pub fn archive_or_remove_file(file: &str, threshold_days: i64) -> anyhow::Result<i32> {
+pub fn archive_remove_or_truncate_file(file: &str, threshold_days: i64) -> anyhow::Result<i32> {
     let _mtime_diff = get_file_mtime_diff(file)?;
-    if _mtime_diff > threshold_days {
-        Ok(1)
-    }
-    else {
-        Ok(0)
+    let _file_extension = get_file_extension(file);
+
+    let check_if_archive_file = match _file_extension.as_str() {
+        "gz" => true,
+        "tar" => true,
+        "zip" => true,
+        _ => false,
+    };
+    
+    let check_if_unknown_file = match _file_extension.as_str() {
+        "unknown" => true,
+        _ => false,
+    };
+
+    match _mtime_diff {
+        _ if (_mtime_diff > threshold_days) && check_if_archive_file && !check_if_unknown_file => Ok(1), // Remove
+        _ if (_mtime_diff <= threshold_days) && !check_if_archive_file && !check_if_unknown_file => Ok(0), // Archive
+        _ if (_mtime_diff <= threshold_days) && !check_if_archive_file && !check_if_unknown_file => Ok(2), // Truncate
+        _ => Ok(3) // Unchanged
     }
 }
 
@@ -199,26 +213,53 @@ pub fn remove_file(file_path: &str) {
 pub fn dry_run_details(file_list: Vec<path::PathBuf>, threshold_days: i64, archive_type: ArchiveType) {
     for file in file_list {
         let mut _temp_archive_check = "";
-        if archive_or_remove_file(file.to_str().unwrap(), threshold_days).unwrap() == 1 {
-            _temp_archive_check = "Archiving";
-            
-            println!("File: {} | Status: {} | Archive Type: {} | File Extension: {}",
-                     file.to_str().unwrap(),
-                     _temp_archive_check,
-                     archive_type.as_str(),
-                     get_file_extension(file.to_str().unwrap()),
-            );
+        match archive_remove_or_truncate_file(file.to_str().unwrap(), threshold_days).unwrap() {
+            0 => println!("File: {} | Status: {} | Action Type: Archiving | File Extension: {}",
+                          file.to_str().unwrap(),
+                          archive_type.as_str(), 
+                          get_file_extension(file.to_str().unwrap()),
+            ),
+            1 => println!("File: {} | Action Type: Removing | File Extension: {}",
+                          file.to_str().unwrap(),
+                          get_file_extension(file.to_str().unwrap()),
+            ),
+            2 => println!("File: {} | Action Type: Truncating | File Extension: {}",
+                          file.to_str().unwrap(),
+                          get_file_extension(file.to_str().unwrap()),
+            ),
+            3 => println!("File: {} | Action Type: Unchanged | File Extension: {}",
+                          file.to_str().unwrap(),
+                          get_file_extension(file.to_str().unwrap()),
+            ),
+            _ => println!("Base Case Error - Was unable to determine action type"),
         }
-        else {
-            _temp_archive_check = "Unchanged";
+    }
+}
 
-            println!("File: {} | Status: {} | File Extension: {}",
-                     file.to_str().unwrap(),
-                     _temp_archive_check,
-                     get_file_extension(file.to_str().unwrap()),
-            );
+#[cfg(not(tarpaulin_include))]
+pub fn actual_run(file_list: Vec<path::PathBuf>, threshold_days: i64, archive_type: ArchiveType) {
+    for file in file_list {
+        let mut _temp_archive_check = "";
+        match archive_remove_or_truncate_file(file.to_str().unwrap(), threshold_days).unwrap() {
+            0 => println!("File: {} | Status: {} | Action Type: Archiving | File Extension: {}",
+                          file.to_str().unwrap(),
+                          archive_type.as_str(),
+                          get_file_extension(file.to_str().unwrap()),
+            ),
+            1 => println!("File: {} | Action Type: Removing | File Extension: {}",
+                          file.to_str().unwrap(),
+                          get_file_extension(file.to_str().unwrap()),
+            ),
+            2 => println!("File: {} | Action Type: Truncating | File Extension: {}",
+                          file.to_str().unwrap(),
+                          get_file_extension(file.to_str().unwrap()),
+            ),
+            3 => println!("File: {} | Action Type: Unchanged | File Extension: {}",
+                          file.to_str().unwrap(),
+                          get_file_extension(file.to_str().unwrap()),
+            ),
+            _ => println!("Base Case Error - Was unable to determine action type"),
         }
-
     }
 }
 
