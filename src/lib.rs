@@ -4,13 +4,14 @@ use std::fs;
 use std::io;
 use std::fmt;
 use std::path;
+use std::str::FromStr;
 use std::path::Path;
 use tar::Builder;
 use flate2::Compression;
 use flate2::write::GzEncoder;
 use chrono::{DateTime, Utc};
 use clap::ValueEnum;
-use std::str::FromStr;
+
 
 /// only allow explicit values and assign an extension type for each
 /// this is used to only allow specific archive types as flags for cli
@@ -38,6 +39,9 @@ pub enum FileType {
     Binary,
     Txt,
     Log,
+    Cef,
+    Clf,
+    Syslog,
     Json,
     Csv,
     Xml,
@@ -55,6 +59,9 @@ impl fmt::Display for FileType {
             FileType::Json => "json",
             FileType::Csv => "csv",
             FileType::Xml => "xml",
+            FileType::Cef => "cef",
+            FileType::Clf => "clf",
+            FileType::Syslog => "syslog",
             FileType::Binary => "bin",
             FileType::Gz => "gz",
             FileType::Tar => "tar",
@@ -67,14 +74,16 @@ impl fmt::Display for FileType {
 
 impl FromStr for FileType {
     type Err = String;
-
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "txt" | "text" => Ok(FileType::Txt),
-            "log" => Ok(FileType::Log),
+            "log" | "logs" => Ok(FileType::Log),
             "json" => Ok(FileType::Json),
             "csv" => Ok(FileType::Csv),
             "xml" => Ok(FileType::Xml),
+            "cef" => Ok(FileType::Cef),
+            "clf" => Ok(FileType::Clf),
+            "syslog" => Ok(FileType::Syslog),
             "bin" => Ok(FileType::Unknown),
             "gz" => Ok(FileType::Gz),
             "tar" => Ok(FileType::Tar),
@@ -99,8 +108,7 @@ pub fn get_file_mtime_diff(file: &str) -> anyhow::Result<i64> {
     Ok(diff)
 }
 
-/// Boilerplate for future function that checks mtime diff
-/// and archives / removes if a threshold is met
+/// meat and potatoes - consumes file and steps through bucketing logic (remove, archive, truncate)
 pub fn archive_remove_truncate_file_bucketing(file: &str, threshold_days: i64) -> anyhow::Result<i32> {
     let _mtime_diff = get_file_mtime_diff(file)?;
     let _file_extension = get_file_extension(file);

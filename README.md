@@ -39,19 +39,18 @@ archiving, removing, and truncating files in a provided directory.
 
 ## Support:
 
-|     File Extension    | Supported | Planned |
+|    File Extension     | Supported | Planned |
 |:---------------------:|:---------:|:-------:|
-|          log          |     ✅     |    -    |
-|          txt          |     ✅     |    -    |
-|          text         |     ✅     |    -    |
+|      log / logs       |     ✅     |    -    |
+|      txt / text       |     ✅     |    -    |
 |          bin          |     ❌     |    ❌    |
 |          xml          |     ✅     |    -    |
 |          csv          |     ✅     |    -    |
-|          json         |     ✅     |    -    |
+|         json          |     ✅     |    -    |
 |          elf          |     ❌     |    ❌    |
-|          cef          |     ❌     |    ✅    |
-|          clf          |     ❌     |    ✅    |
-|         syslog        |     ❌     |    ✅    |
+|          cef          |     ✅     |    -    |
+|          clf          |     ✅     |    -    |
+|        syslog         |     ✅      |    -    |
 | Any Unnamed Extension |     ❌     |    ❓    |
 
 ---
@@ -61,10 +60,10 @@ archiving, removing, and truncating files in a provided directory.
 _Requires Rust (minimum stable-2024 & any-architecture)_
 
 ```bash
-  git clone https://github.com/jackpots28/logrotate.git
-  cd logrotate
-  cargo build --profile release
-  sudo cp target/release/logrotate /usr/bin
+    git clone https://github.com/jackpots28/logrotate.git
+    cd logrotate
+    cargo build --profile release
+    sudo cp target/release/logrotate /usr/bin
 ```
 
 Built binary is ~2Mb on disk
@@ -93,5 +92,5 @@ Windows (x86-64 assumed):
 
 Crates.io
 ```bash
-    TBD
+    https://crates.io/crates/logrotate
 ```
