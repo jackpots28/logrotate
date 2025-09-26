@@ -11,5 +11,9 @@ Cargo.lock
 # Jetbrains Specific Files
 /.idea
 
+# Tests Dir Log Files
+tests/test_log_dir
+
 # KEEP
 !README.md
+!tests/test_log_dir/.gitkeep

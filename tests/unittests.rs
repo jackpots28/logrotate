@@ -15,6 +15,15 @@ use logrotate::{
 use std::fs;
 use std::path;
 
+
+/// Helper function to create test files
+pub fn creat_test_file(extension: &str) -> String {
+    let new_file_path = "./tests/test_log_dir/test_".to_string() + extension + "_file." + extension;
+    fs::File::create(new_file_path.clone()).ok();
+    new_file_path
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -28,6 +37,110 @@ mod tests {
         // old test - assert_eq!(testing_operand, right_hand_operand);
 
         assert!(testing_operand.len() >= 1);
+    }
+
+
+    /// These tests revolve around the specific supported files times for rotation
+    /// Since the test creates the file, the mtime is always the current date,
+    /// so a threshold has to be negative to induce "change"
+    #[test]
+    fn test_txt_file_archive() {
+        let txt_test_file = creat_test_file("txt");
+        let result = archive_remove_truncate_file_bucketing(
+            txt_test_file.as_str(),
+            -1).unwrap();
+
+        assert_eq!(result, 3)
+    }
+
+    #[test]
+    fn test_text_file_archive() {
+        let text_test_file = creat_test_file("text");
+        let result = archive_remove_truncate_file_bucketing(
+            text_test_file.as_str(),
+            -1).unwrap();
+
+        assert_eq!(result, 3)
+    }
+
+    #[test]
+    fn test_xml_file_archive() {
+        let xml_test_file = creat_test_file("xml");
+        let result = archive_remove_truncate_file_bucketing(
+            xml_test_file.as_str(),
+            -1).unwrap();
+
+        assert_eq!(result, 3)
+    }
+
+    #[test]
+    fn test_log_file_archive() {
+        let log_test_file = creat_test_file("log");
+        let result = archive_remove_truncate_file_bucketing(
+            log_test_file.as_str(),
+            -1).unwrap();
+
+        assert_eq!(result, 3)
+    }
+
+    #[test]
+    fn test_logs_file_archive() {
+        let logs_test_file = creat_test_file("logs");
+        let result = archive_remove_truncate_file_bucketing(
+            logs_test_file.as_str(),
+            -1).unwrap();
+
+        assert_eq!(result, 3)
+    }
+
+    #[test]
+    fn test_clf_file_archive() {
+        let clf_test_file = creat_test_file("clf");
+        let result = archive_remove_truncate_file_bucketing(
+            clf_test_file.as_str(),
+            -1).unwrap();
+
+        assert_eq!(result, 3)
+    }
+
+    #[test]
+    fn test_cef_file_archive() {
+        let cef_test_file = creat_test_file("cef");
+        let result = archive_remove_truncate_file_bucketing(
+            cef_test_file.as_str(),
+            -1).unwrap();
+
+        assert_eq!(result, 3)
+    }
+
+    #[test]
+    fn test_syslog_file_archive() {
+        let syslog_test_file = creat_test_file("syslog");
+        let result = archive_remove_truncate_file_bucketing(
+            syslog_test_file.as_str(),
+            -1).unwrap();
+
+        assert_eq!(result, 3)
+    }
+
+    #[test]
+    fn test_json_file_archive() {
+        let json_test_file = creat_test_file("json");
+        let result = archive_remove_truncate_file_bucketing(
+            json_test_file.as_str(),
+            -1).unwrap();
+
+        assert_eq!(result, 3)
+    }
+
+    #[test]
+    fn test_csv_file_archive() {
+        let csv_test_file = creat_test_file("csv");
+        let result = archive_remove_truncate_file_bucketing(
+            csv_test_file.as_str(),
+            -1).unwrap();
+
+        assert_eq!(result, 3)
     }
 
     #[test]

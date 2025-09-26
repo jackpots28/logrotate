@@ -77,7 +77,7 @@ jobs:
       - name: Generate code coverage
         run: cargo llvm-cov --all-features > llvm_coverage.report
       - name: Upload Coverage Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rust-coverage-report
           path: ./llvm_coverage.report
